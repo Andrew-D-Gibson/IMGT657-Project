@@ -2,7 +2,7 @@ import numpy as np
 import random
 import copy
 
-from TTTBoard import TTTBoard
+from TicTacToe import TicTacToe
 
 from Config import *
 
@@ -44,7 +44,10 @@ class MCTS():
         self.search_probs = []
         
         # Current board position
-        self.board = TTTBoard()
+        if config['game'] == 'TicTacToe':
+            self.board = TicTacToe()
+        else:
+            raise ValueError('Config file missing a proper game to play.')
         
     
     def random_rollout(self):
@@ -52,15 +55,16 @@ class MCTS():
         # If it is, backpropagate the value up the tree
         # We 'absolute value' the return to properly punish this node for losing
         # (e.g. A "Game Over" when it's your turn is either a draw or loss, so -1 or 0 reward)
-        if self.board.is_game_over():
-            self.backpropagate(-np.abs(self.board.value))
+        game_over, value = self.board.is_game_over()
+        if game_over:
+            self.backpropagate(-np.abs(value))
             return
         
-        potential_children = self.make_children_list()
+        self.expand_node()
         
-        self.search_probs = np.ones(len(potential_children))    # We treat all children equally in random rollout
+        self.search_probs = np.ones(len(self.children))    # We treat all children equally in random rollout
         
-        random.choice(potential_children).random_rollout()
+        random.choice(self.children).random_rollout()
     
     
     def check_nnet(self):
@@ -68,8 +72,9 @@ class MCTS():
         # If it is, backpropagate the value up the tree
         # We 'absolute value' the return to properly punish this node for losing
         # (e.g. A "Game Over" when it's your turn is either a draw or loss, so -1 or 0 reward)
-        if self.board.is_game_over():
-            self.backpropagate(-np.abs(self.board.value))
+        game_over, value = self.board.is_game_over()
+        if game_over:
+            self.backpropagate(-np.abs(value))
             return
         
         # Now we know the game isn't over, so return the neural network's evaluation
@@ -77,7 +82,7 @@ class MCTS():
         
         self.search_probs, value_est = self.NNet.predict(board_arrays, verbose=0)
 
-        self.search_probs = np.squeeze(self.search_probs)[self.board.find_moves()]  # Get only the search probs for valid moves
+        self.search_probs = np.squeeze(self.search_probs)[self.board.get_legal_moves()]  # Get only the search probs for valid moves
         value_est = np.squeeze(value_est)
         
         self.backpropagate(value_est)
@@ -96,27 +101,10 @@ class MCTS():
         
         self.pi = [child_n / sum(children_n) for child_n in children_n]
         
-    
-    def make_move(self, move = None):
-        if move not in self.board.find_moves():
-            print('No valid move given!')
-            return
-        
-        if len(self.children) == 0:
-            self.board.make_move(move)
-            return self
-            
-        for child in self.children:
-            if child.move == move:
-                child.parent = None
-                return child
-            
-        print('Error! make_move didn\'t return a new node.')  # In theory should never see this. In theory.
-        
         
     # Returns a list of all the valid children nodes
-    def make_children_list(self):
-        return [MCTS(NNet=self.NNet, parent=self, move=move) for move in self.board.find_moves()]
+    def expand_node(self):
+        self.children = [MCTS(NNet=self.NNet, parent=self, move=move) for move in self.board.get_legal_moves()]
         
     
     # Backpropagates a states value back up through all the parent nodes,
@@ -134,12 +122,12 @@ class MCTS():
     def MCTS_iteration(self):
         # Check if we're at a terminal node (no more game to play because it's over!)
         # If so, then just backpropagate the value of the position
-        if self.board.is_game_over():
-            self.backpropagate(-np.abs(self.board.value))    # Prior node won or drew, so reward it with +1 (or 0 so w/e)
-            return
+        game_over, value = self.board.is_game_over()
+        if game_over:
+            self.backpropagate(-np.abs(value))    # Prior node won or drew, so reward it with +1 (or 0 so w/e)
             
         # Check if we're at a leaf node (no children exist in this tree)
-        if self.children == []:     
+        elif len(self.children) == 0:     
             # If we've never been here before (n = 0) then perform rollout
             if self.n == 0:
                 self.rollout_func()
@@ -147,7 +135,7 @@ class MCTS():
             # Otherwise extend the tree by finding all the children and then 
             # performing rollout on the first child
             else:
-                self.children = self.make_children_list()
+                self.expand_node()
                 self.children[0].rollout_func()
         
         # The game isn't over and we're not at a leaf node, therefore we're somewhere in the search tree.
