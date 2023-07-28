@@ -8,28 +8,24 @@ import tensorflow as tf # Used for neural networks
 import pickle
 
 # Class imports
-from TTTBoard import UTTTBoard
-from NNetMCTS import NNetMCTS
-from trainingExample import trainingExample
-from NetworkArchitectureTester import NetworkArchitectureTester
+from TicTacToe import TicTacToe
 
 # Function imports
-from simulateSelfPlayGames import simulateSelfPlayGames
+from simulate_self_play_games import simulate_self_play_games
 
 # Config setup
-from Config import Config
-Config = Config()
+from Config import *
 
 
 class TrainingManager:
     def __init__(self):
-        self.bestNNet = tf.keras.models.load_model("BestNNet")
-        self.trainingNNet = NetworkArchitectureTester.convNet()
+        self.best_model = TicTacToe.get_keras_model()
+        self.training_model = TicTacToe.get_keras_model()
         
-        self.trainingExamples = []
+        self.training_examples = []
  
     
-    def trainOnExamples(self, examples):
+    def train_on_examples(self, examples):
         board_train = np.empty((0,2,9,9))
         search_probs_train = np.empty((0,81))
         eval_train = np.empty((0,1))
@@ -42,64 +38,7 @@ class TrainingManager:
         loss_callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=Config.training_patience)
                                                     
         history = self.trainingNNet.fit(board_train, [search_probs_train, eval_train], callbacks=[loss_callback], epochs=Config.training_epochs, verbose=0)
-        print(" Minibatch Policy Acc: " + str(history.history['policy_output_accuracy'][-1]) + ", Value Acc: " + str(history.history['value_output_accuracy'][-1]))
-    
-    
-    def head2headGame(self, playerA, playerB):
-        while True:
-            # A's move
-            playerA.search()
-            childChoice = np.random.choice(len(playerA.pi), p=playerA.pi)
-            
-            playerB = playerB.makeMove(moveChoice = playerA.children[childChoice].move)
-            playerA = playerA.makeMove(childChoice = childChoice)
-            
-            if (playerA.board.checkGameOver()):
-                return playerA.board.value
-            
-            # B's Move
-            playerB.search()
-            childChoice = np.random.choice(len(playerB.pi), p=playerB.pi)
-            
-            playerA = playerA.makeMove(moveChoice = playerB.children[childChoice].move)
-            playerB = playerB.makeMove(childChoice = childChoice)
-
-            if (playerA.board.checkGameOver()):
-                return playerA.board.value
-            
-            
-    def head2headMatch(self, playerA, playerB, numOfGames = 10):
-        A_wins = 0
-        draws = 0
-        B_wins = 0
-        
-        for i in range(int(numOfGames/2)):
-            start = time.time()
-            result = self.head2headGame(playerA, playerB)
-            playerA.reset()
-            playerB.reset()
-            if result == 1:
-                A_wins += 1
-            elif result == -1:
-                B_wins += 1
-            else:
-                draws += 1
-            print("Time for game: ", time.time()-start)
-                
-            start = time.time()
-            result = self.head2headGame(playerB, playerA)
-            playerA.reset()
-            playerB.reset()
-            if result == 1:
-                B_wins += 1
-            elif result == -1:
-                A_wins += 1
-            else:
-                draws += 1
-            print("Time for game: ", time.time()-start)
-
-        return A_wins, draws, B_wins
-        
+        print(" Minibatch Policy Acc: " + str(history.history['policy_output_accuracy'][-1]) + ", Value Acc: " + str(history.history['value_output_accuracy'][-1])) 
 
     def log_result(self, result):
         print("Result returned.")

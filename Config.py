@@ -8,7 +8,7 @@ config = {
     
     'self_play': {
         'num_of_episodes': 1000,
-        'num_of_self_play_games': 1,
+        'num_of_self_play_games': 10,
         'num_of_testing_games': 20,
     },
     

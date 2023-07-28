@@ -6,6 +6,8 @@ class TicTacToe(GameArchitecture):
     def __init__(self):
         super().__init__()
 
+        self.policy_size = 9
+
         # Clear the bitboards
         self.x = 0
         self.o = 0

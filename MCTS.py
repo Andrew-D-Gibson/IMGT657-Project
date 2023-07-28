@@ -8,7 +8,7 @@ from Config import *
 
 
 class MCTS():    
-    def __init__(self, NNet = None, parent = None, move = None, search_prob = None):    
+    def __init__(self, NNet = None, parent = None, move = None, search_prob = None):  
         self.reset()
         
         if NNet == None:

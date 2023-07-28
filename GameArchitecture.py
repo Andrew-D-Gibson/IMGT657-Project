@@ -1,8 +1,12 @@
 # Base class to define how games are implemented
 class GameArchitecture:
-    # Set the first player to move when starting a game
     def __init__(self):
+        # Set the first player to move when starting a game
         self.player_1_move = True
+
+        # Set the size of the game's policy (same as the neural network's output)
+        # This is used for creating training samples later
+        self.policy_size = 0
         
     # List the legal moves in the position
     def get_legal_moves(self):
