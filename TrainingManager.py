@@ -98,7 +98,7 @@ class TrainingManager:
             wins, draws, losses = head_to_head_match(
                 MCTS(self.training_model), 
                 MCTS(self.best_model), 
-                stochastic = False)
+                stochastic = True)
             print("W/D/L:", wins, " / ", draws, " / ", losses)
 
             #if new_wins + (0.5*draws) > (Config.num_of_testing_games * 0.5):

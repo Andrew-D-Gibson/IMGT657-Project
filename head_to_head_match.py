@@ -9,9 +9,6 @@ def head_to_head_game(mcts_1, mcts_2, stochastic = True):
     mcts_1.reset()
     mcts_2.reset()
 
-    # Expand the second player's node so we can make the first players move
-    mcts_2.expand_node()
-
     # This loop always searches with player "1", and switches between the two players till the game is over
     # Note that the value returned is always 1 for a player 1 win, so we don't have to worry about admin
     while True:
@@ -20,6 +17,7 @@ def head_to_head_game(mcts_1, mcts_2, stochastic = True):
             return value
         
         mcts_1.search()
+        mcts_2.expand_node()
 
         if stochastic:
             child_choice = np.random.choice(len(mcts_1.pi), p=mcts_1.pi)
