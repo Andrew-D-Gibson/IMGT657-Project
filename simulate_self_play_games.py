@@ -27,11 +27,14 @@ def get_training_example(mcts):
 
 # Method for simulating a number of games
 # Returns the games as individual training examples, unshuffled
-def simulate_self_play_games():
+def simulate_self_play_games(keras_model = None):
     training_examples = []
 
     for i in range(config['self_play']['num_of_self_play_games']):
-        mcts = MCTS()
+        if keras_model == None:
+            mcts = MCTS()
+        else:
+            mcts = MCTS(keras_model=keras_model)
 
         while True:
             mcts.search()

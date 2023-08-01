@@ -8,15 +8,20 @@ from Config import *
 
 
 class MCTS():    
-    def __init__(self, NNet = None, parent = None, move = None, search_prob = None):  
+    def __init__(self, keras_model = None, search_depth = None, parent = None, move = None, search_prob = None):  
         self.reset()
-        
-        if NNet == None:
+
+        if search_depth == None:
+            self.search_depth = config['mcts']['search_depth']
+        else:
+            self.search_depth = search_depth
+
+        if keras_model == None:
             self.rollout_func = self.random_rollout
         else:
-            self.rollout_func = self.check_nnet
-        
-        self.NNet = NNet
+            self.rollout_func = self.check_keras_model
+        self.keras_model = keras_model   
+
         self.parent = parent
         self.move = move
         self.search_prob = search_prob
@@ -67,7 +72,7 @@ class MCTS():
         random.choice(self.children).random_rollout()
     
     
-    def check_nnet(self):
+    def check_keras_model(self):
         # Check if we're in a terminal position (game is won, lost, or a draw)
         # If it is, backpropagate the value up the tree
         # We 'absolute value' the return to properly punish this node for losing
@@ -78,9 +83,9 @@ class MCTS():
             return
         
         # Now we know the game isn't over, so return the neural network's evaluation
-        board_arrays = np.array([self.board.get_array_representation()])
+        board_arrays = np.array([self.board.get_keras_input()])
         
-        self.search_probs, value_est = self.NNet.predict(board_arrays, verbose=0)
+        self.search_probs, value_est = self.keras_model.predict(board_arrays, verbose=0)
 
         self.search_probs = np.squeeze(self.search_probs)[self.board.get_legal_moves()]  # Get only the search probs for valid moves
         value_est = np.squeeze(value_est)
@@ -90,9 +95,7 @@ class MCTS():
     
     # Top level search method
     def search(self):
-        iterations = config['mcts']['search_depth']
-                
-        for i in range(iterations):
+        for i in range(self.search_depth):
             self.MCTS_iteration()
         
         # Find the number of visits (n) for each node as a proxy for goodness of the node
@@ -104,7 +107,7 @@ class MCTS():
         
     # Returns a list of all the valid children nodes
     def expand_node(self):
-        self.children = [MCTS(NNet=self.NNet, parent=self, move=move) for move in self.board.get_legal_moves()]
+        self.children = [MCTS(search_depth=self.search_depth, keras_model=self.keras_model, parent=self, move=move) for move in self.board.get_legal_moves()]
         
     
     # Backpropagates a states value back up through all the parent nodes,

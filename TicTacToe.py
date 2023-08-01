@@ -106,11 +106,6 @@ class TicTacToe(GameArchitecture):
         print('\n')
 
 
-    # Ask for and validate (shouldn't make) a user's move
-    def get_user_move(self):
-        pass
-
-
     # Return the representation of the game's state
     # ready for input to a neural network (defined below)
     def get_keras_input(self):
@@ -136,7 +131,7 @@ class TicTacToe(GameArchitecture):
     @staticmethod
     def get_keras_model():
         # Define network architecture
-        tic_tac_toe_input = tf.keras.layers.Input(shape=(3,3,3), name='TTT_input')
+        tic_tac_toe_input = tf.keras.layers.Input(shape=(3,3,3), name='ttt_input')
         flatten = tf.keras.layers.Flatten()(tic_tac_toe_input)
         hidden = tf.keras.layers.Dense(64, activation='relu')(flatten)
         hidden = tf.keras.layers.Dense(64, activation='relu')(hidden)

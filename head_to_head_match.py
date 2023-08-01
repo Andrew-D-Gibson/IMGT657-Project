@@ -4,7 +4,7 @@ from MCTS import MCTS
 
 from Config import *
 
-def head_to_head_game(mcts_1, mcts_2):
+def head_to_head_game(mcts_1, mcts_2, stochastic = True):
     # Reset the game state in case these players are playing multiple games in a row
     mcts_1.reset()
     mcts_2.reset()
@@ -20,7 +20,12 @@ def head_to_head_game(mcts_1, mcts_2):
             return value
         
         mcts_1.search()
-        child_choice = np.random.choice(len(mcts_1.pi), p=mcts_1.pi)
+
+        if stochastic:
+            child_choice = np.random.choice(len(mcts_1.pi), p=mcts_1.pi)
+        else:
+            child_choice = np.argmax(mcts_1.pi)
+
         mcts_1 = mcts_1.children[child_choice]
         mcts_2 = mcts_2.children[child_choice]
 
@@ -28,13 +33,15 @@ def head_to_head_game(mcts_1, mcts_2):
         mcts_1, mcts_2 = mcts_2, mcts_1
 
 
-def head_to_head_match(mcts_1, mcts_2, num_of_games = config['self_play']['num_of_testing_games']):
+def head_to_head_match(mcts_1, mcts_2, 
+                       num_of_games = config['self_play']['num_of_testing_games'], 
+                       stochastic = True):
     mcts_1_wins = 0
     mcts_2_wins = 0
     draws = 0
 
     for i in range(num_of_games):
-        result = head_to_head_game(mcts_1, mcts_2)
+        result = head_to_head_game(mcts_1, mcts_2, stochastic)
 
         # Flip results as we flip players
         if i % 2 == 1:
