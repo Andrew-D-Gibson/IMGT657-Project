@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import copy
+import time
 
 from TicTacToe import TicTacToe
 
@@ -8,13 +9,8 @@ from Config import *
 
 
 class MCTS():    
-    def __init__(self, keras_model = None, search_depth = None, parent = None, move = None, search_prob = None):  
+    def __init__(self, keras_model = None, parent = None, move = None):  
         self.reset()
-
-        if search_depth == None:
-            self.search_depth = config['mcts']['search_depth']
-        else:
-            self.search_depth = search_depth
 
         if keras_model == None:
             self.rollout_func = self.random_rollout
@@ -24,7 +20,6 @@ class MCTS():
 
         self.parent = parent
         self.move = move
-        self.search_prob = search_prob
 
         
         # If we have a parent, set the board to our parents board
@@ -35,7 +30,7 @@ class MCTS():
 
             
     def reset(self):
-         # Set the node's total value to 0
+        # Set the node's total value to 0
         self.t = 0
         
         # Set the node's total visits to 0
@@ -94,9 +89,25 @@ class MCTS():
         
     
     # Top level search method
-    def search(self):
-        for i in range(self.search_depth):
+    def search(self, depth_to_search = -1, seconds_to_search = -1):
+        # Depth based search (should be used rarely)
+        if depth_to_search != -1:
+            for i in range(depth_to_search):
+                self.MCTS_iteration()
+
+        # Time based search
+        else:
+            if seconds_to_search == -1:
+                seconds_to_search = config['mcts']['search_time']
+
+            # Tensorflow has a weird startup timing,
+            # so we get it going before starting the clock
             self.MCTS_iteration()
+
+            start_time = time.time()
+            while time.time() - start_time < seconds_to_search:
+                self.MCTS_iteration()
+            
         
         # Find the number of visits (n) for each node as a proxy for goodness of the node
         # (Not the highest average value, to make sure we're confident)
@@ -107,7 +118,7 @@ class MCTS():
         
     # Returns a list of all the valid children nodes
     def expand_node(self):
-        self.children = [MCTS(search_depth=self.search_depth, keras_model=self.keras_model, parent=self, move=move) for move in self.board.get_legal_moves()]
+        self.children = [MCTS(keras_model=self.keras_model, parent=self, move=move) for move in self.board.get_legal_moves()]
         
     
     # Backpropagates a states value back up through all the parent nodes,
@@ -155,4 +166,48 @@ class MCTS():
             best_UCB = np.argmax(children_UCB)
             
             self.children[best_UCB].MCTS_iteration()
+
+
+    # Debug method for double checking the MCTS functionality
+    def print(self):
+        print('MCTS Node:')
+
+        self.board.print()
+
+        print(f'Total Value: {self.t}')
+        print(f'Node Visits: {self.n}')
+
+
+        def extend_list(sub_list):
+            legal_moves = self.board.get_legal_moves()
+            extended_list = ['-'] * self.board.policy_size
+ 
+            while len(sub_list) > 0:
+                extended_list[legal_moves[0]] = sub_list[0]
+                
+                legal_moves.pop(0)
+                sub_list.pop(0)
+
+            return extended_list
             
+        def print_extended_list(list_to_print):
+            extended_list = extend_list(list_to_print)
+            for i in range(2, -1, -1):
+                for j in range(2, -1, -1):
+                    if extended_list[(i*3) + j] == '-':
+                        print('-\t', end='')
+                        continue
+
+                    print(f'{extended_list[(i*3) + j]:.2f}', end='\t')
+                print('\n')
+
+        print('\nChild Moves:')
+        child_moves = [child.move for child in self.children]
+        print_extended_list(child_moves)
+
+        print('\nRaw Search Probs:')
+        print_extended_list(list(self.search_probs))
+
+        print('\nPi:')
+        print_extended_list(self.pi)
+        

@@ -103,7 +103,7 @@ class TicTacToe(GameArchitecture):
                     print('    O\'s move', end = '')
                     
             print('\n')
-        print('\n')
+        #print('\n')
 
 
     # Return the representation of the game's state

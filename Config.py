@@ -3,7 +3,7 @@ config = {
 
     'mcts': {
         'exploration_parameter': 3,
-        'search_depth': 50,
+        'search_time': 2
     },
     
     'self_play': {
