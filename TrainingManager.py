@@ -25,6 +25,10 @@ class TrainingManager:
         self.training_model = TicTacToe.get_keras_model()
         
         self.training_examples = []
+
+        if config['training']['old_examples_to_load'] != '':
+            with open(f"TrainingExamples/{config['training']['old_examples_to_load']}", 'rb') as file:
+                self.training_examples = pickle.load(file)
  
     
     def train_on_examples(self, examples):
@@ -47,7 +51,7 @@ class TrainingManager:
             [search_probs_train, eval_train], 
             callbacks=[loss_callback], 
             epochs=config['training']['training_epochs'], 
-            verbose=0)
+            verbose=1)
         
         print(" Minibatch Policy Acc: " + 
               str(history.history['policy_output_accuracy'][-1]) + 
@@ -66,33 +70,28 @@ class TrainingManager:
 
 
             # Simulate games
-            print('Simulating games...')
-            self.training_examples = simulate_self_play_games(self.best_model)
-            print(f'{len(self.training_examples)} examples generated.')
+            print('Simulating games:')
+            new_examples = simulate_self_play_games(self.best_model)
+            self.training_examples.extend(new_examples)
+            print(f'{len(new_examples)} examples generated, {len(self.training_examples)} total.')
 
-            """
+            
             # If we have too many examples, remove the first bunch
-            if len(self.trainingExamples) > Config.max_training_examples:
-                self.trainingExamples = self.trainingExamples[len(self.trainingExamples) - Config.max_training_examples:]
-            """
+            if len(self.training_examples) > config['training']['max_training_examples']:
+                self.training_examples = self.training_examples[len(self.training_examples) - config['training']['max_training_examples']:]
+            
 
             # Train the network
             print("\nTraining on examples:")   
-            self.train_on_examples(self.training_examples)
-            """
             self.training_model.set_weights(self.best_model.get_weights())
-
             for i in range(config['training']['num_of_training_batches']):
-                print(i+1, '/', config['training']['num_of_training_batches'], '-', end='')
-                
                 max_minibatch_size = np.min([config['training']['size_of_training_batches'], len(self.training_examples)])
-                print(max_minibatch_size)
-                
-                minibatch = np.random.choice(self.training_examples, max_minibatch_size, replace=False)
-                
+                minibatch = random.sample(self.training_examples, max_minibatch_size)
+
+                print(f"{i+1}/{config['training']['num_of_training_batches']}-{max_minibatch_size}, ", end='')
                 self.train_on_examples(minibatch)
-            """
-                
+            
+
             # Test network for improvement, and save new network if so
             print("New network against old network (testing for improvement): ")
             wins, draws, losses = head_to_head_match(
@@ -114,16 +113,15 @@ class TrainingManager:
             print("Best network against MCTS: ")
             wins, draws, losses = head_to_head_match(
                 MCTS(self.best_model), 
-                MCTS(search_depth = config['mcts']['search_depth'] * 2),
+                MCTS(),
                 stochastic = False)
             print("W/D/L:", wins, " / ", draws, " / ", losses)
+
             
-            """ 
             # Save training examples
-            file = open("TrainingExamples/Episode_" + str(episode), 'wb')
-            pickle.dump(self.trainingExamples, file)
-            file.close()
-            """
+            with open("TrainingExamples/Episode_" + str(episode), 'wb') as file:
+                pickle.dump(self.training_examples, file)
+            
             
             print("Total episode time: ", time.time() - episode_start_time)
             

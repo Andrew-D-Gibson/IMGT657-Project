@@ -1,6 +1,6 @@
 # Project Specific
 Networks/
-networks/
+TrainingExamples/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

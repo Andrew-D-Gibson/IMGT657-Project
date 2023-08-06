@@ -39,6 +39,7 @@ def head_to_head_match(mcts_1, mcts_2,
     draws = 0
 
     for i in range(num_of_games):
+        print(f"{i+1}/{config['self_play']['num_of_testing_games']}, ", end='')
         result = head_to_head_game(mcts_1, mcts_2, stochastic)
 
         # Flip results as we flip players

@@ -31,6 +31,7 @@ def simulate_self_play_games(keras_model = None):
     training_examples = []
 
     for i in range(config['self_play']['num_of_self_play_games']):
+        print(f"{i+1}/{config['self_play']['num_of_self_play_games']}, ", end='')
         if keras_model == None:
             mcts = MCTS()
         else:
