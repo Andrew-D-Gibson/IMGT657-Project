@@ -116,9 +116,10 @@ class MCTS():
         self.pi = [child_n / sum(children_n) for child_n in children_n]
         
         
-    # Returns a list of all the valid children nodes
+    # Creates a list of all the valid children nodes under this node
     def expand_node(self):
-        self.children = [MCTS(keras_model=self.keras_model, parent=self, move=move) for move in self.board.get_legal_moves()]
+        self.children = [MCTS(keras_model=self.keras_model, parent=self, move=move) 
+                              for move in self.board.get_legal_moves()]
         
     
     # Backpropagates a states value back up through all the parent nodes,
@@ -200,10 +201,6 @@ class MCTS():
 
                     print(f'{extended_list[(i*3) + j]:.2f}', end='\t')
                 print('\n')
-
-        print('\nChild Moves:')
-        child_moves = [child.move for child in self.children]
-        print_extended_list(child_moves)
 
         print('\nRaw Search Probs:')
         print_extended_list(list(self.search_probs))
