@@ -87,23 +87,21 @@ class TicTacToe(GameArchitecture):
                     print(' _ ', end = '')
                 
             if (i == 1):
-                """
-                if self.is_game_over():
-                    if self.value == 1:
+                game_over, value = self.is_game_over()
+                if game_over:
+                    if value == 1:
                         print('    X Won!', end = '')
-                    elif self.value == -1:
+                    elif value == -1:
                         print('    O Won!', end = '')
                     else:
                         print('    Draw!', end = '')
-                el
-                """
-                if (self.player_1_move):
+                elif (self.player_1_move):
                     print('    X\'s move', end = '')
                 else:
                     print('    O\'s move', end = '')
                     
             print('\n')
-        #print('\n')
+        print('---')
 
 
     # Return the representation of the game's state
@@ -138,8 +136,6 @@ class TicTacToe(GameArchitecture):
         policy_output = tf.keras.layers.Dense(9, activation='softmax', name='policy_output')(hidden)
         value_output = tf.keras.layers.Dense(1, activation='tanh', name='value_output')(hidden)
         model = tf.keras.models.Model(inputs=tic_tac_toe_input, outputs=[policy_output, value_output])
-        
-        #model.summary()
         
         # Compile model 
         losses = {

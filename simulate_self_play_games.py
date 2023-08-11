@@ -1,6 +1,9 @@
 import random
 import copy
+import os
 import numpy as np
+import tensorflow as tf
+import ray
 
 from TicTacToe import TicTacToe
 from MCTS import MCTS
@@ -27,15 +30,20 @@ def get_training_example(mcts):
 
 # Method for simulating a number of games
 # Returns the games as individual training examples, unshuffled
-def simulate_self_play_games(keras_model = None):
+@ray.remote
+def simulate_self_play_games():
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
     training_examples = []
+
+    mcts = MCTS(keras_model=tf.keras.models.load_model('Networks/Best_Model'))
 
     for i in range(config['self_play']['num_of_self_play_games']):
         print(f"{i+1}/{config['self_play']['num_of_self_play_games']}, ", end='')
-        if keras_model == None:
-            mcts = MCTS()
-        else:
-            mcts = MCTS(keras_model=keras_model)
+        if ((i+1)%10==0):
+            print(' ')
+
+        mcts.reset()
 
         while True:
             mcts.search()

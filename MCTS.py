@@ -38,6 +38,10 @@ class MCTS():
  
         # Children nodes (also of class NNetMCTS)
         self.children = []
+
+        # Remove anything upstream
+        self.parent = None
+        self.move = None
     
         # Search probabilities
         self.pi = []
@@ -118,7 +122,7 @@ class MCTS():
         
     # Creates a list of all the valid children nodes under this node
     def expand_node(self):
-        self.children = [MCTS(keras_model=self.keras_model, parent=self, move=move) 
+        self.children = [self.__class__(keras_model=self.keras_model, parent=self, move=move) 
                               for move in self.board.get_legal_moves()]
         
     
@@ -207,4 +211,40 @@ class MCTS():
 
         print('\nPi:')
         print_extended_list(self.pi)
+
+
+class PureNetworkAgent(MCTS):
+    def search(self):
+        self.expand_node()
+        board_arrays = np.array([self.board.get_keras_input()])
         
+        self.pi, value_est = self.keras_model.predict(board_arrays, verbose=0)
+
+        self.pi = np.squeeze(self.pi)[self.board.get_legal_moves()]  # Get only the search probs for valid moves
+        # In regular MCTS, the above would be the search probabilities.
+        # Given this is the raw network agent we aren't searching though,
+        # so the network's output is used for raw move selection
+
+        # Normalize so we can do stochastic play
+        # This doesn't change non-stochastic output
+        self.pi /= np.sum(self.pi)
+
+
+# BROKEN MESS OF SHIT
+class PlayerAgent(MCTS):
+    def search(self):
+        self.expand_node()
+        self.board.print()
+
+        while True:
+            user_move = input('Move to play? (0-8): ')
+            user_move = int(user_move)
+
+            if user_move in self.board.get_legal_moves():
+                break
+            
+            print(f'Not a legal move! Legal moves are: {self.board.get_legal_moves()}')
+
+        self.pi = np.zeros(self.board.policy_size)
+        self.pi[self.board.get_legal_moves().index(user_move)] = 1
+
