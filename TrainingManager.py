@@ -14,6 +14,7 @@ from MCTS import MCTS, PureNetworkAgent
 # Function imports
 from simulate_self_play_games import simulate_self_play_games
 from head_to_head_match import head_to_head_match
+from log_model_performance import log_model_performance, initialize_model_log
 
 # Config setup
 from Config import *
@@ -43,61 +44,8 @@ class TrainingManager:
         # This will inherit the weights of the best model before training
         self.training_model = TicTacToe.get_keras_model()
 
-        # Create a new training history file
-        header = ['Episode_Number', 
-                  'Network_MCTS_stochastic', 
-                  'Raw_Network_stochastic',
-                  'Network_MCTS', 
-                  'Raw_Network']
-        
-        with open('Networks/training_history.csv', mode='w', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow(header)  # Write the header
-        
-        #self.add_model_to_history(self.best_model, 0)
-
-
-    def add_model_to_history(self, keras_model, episode_num):
-        print('Adding model to training history:')
-        new_history_record = [episode_num]
-
-        print('MCTS with network against raw MCTS: ')
-        wins, draws, losses = head_to_head_match(
-            MCTS(keras_model), 
-            MCTS(),
-            stochastic = True)
-        print(f'\nW/D/L: {wins} / {draws} / {losses}')
-        new_history_record.extend([(wins, draws, losses)])
-
-        print('Raw network against raw MCTS: ')
-        wins, draws, losses = head_to_head_match(
-            PureNetworkAgent(keras_model), 
-            MCTS(),
-            stochastic = True)
-        print(f'\nW/D/L: {wins} / {draws} / {losses}')
-        new_history_record.extend([(wins, draws, losses)])
-
-        print('Non-Stochastic MCTS with network against raw MCTS: ')
-        wins, draws, losses = head_to_head_match(
-            MCTS(keras_model), 
-            MCTS(),
-            stochastic = False,
-            num_of_games = 2)
-        print(f'\nW/D/L: {wins} / {draws} / {losses}')
-        new_history_record.extend([(wins, draws, losses)])
-
-        print('Non-Stochastic Raw network against raw MCTS: ')
-        wins, draws, losses = head_to_head_match(
-            PureNetworkAgent(keras_model), 
-            MCTS(),
-            stochastic = False,
-            num_of_games = 2)
-        print(f'\nW/D/L: {wins} / {draws} / {losses}')
-        new_history_record.extend([(wins, draws, losses)])
-
-        with open('Networks/training_history.csv', mode='a', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow(new_history_record)
+        initialize_model_log()
+        log_model_performance(self.best_model, 0)
 
     
     def train_on_examples(self, examples):
@@ -144,7 +92,7 @@ class TrainingManager:
 
             # Simulate games
             print('Simulating games:')
-            new_examples = [simulate_self_play_games.remote() for _ in range(16)]
+            new_examples = [simulate_self_play_games.remote() for _ in range(32)]
             new_examples = ray.get(new_examples)
 
             for example in new_examples:
